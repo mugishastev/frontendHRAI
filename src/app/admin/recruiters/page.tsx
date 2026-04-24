@@ -2,7 +2,7 @@
 
 import DashboardLayout from '@/components/DashboardLayout';
 import { useGetUsersQuery, useCreateRecruiterMutation, useDeleteRecruiterMutation } from '@/store/api';
-import { Users, Trash2, PlusCircle, ShieldCheck, User, X } from 'lucide-react';
+import { Users, Trash2, PlusCircle, ShieldCheck, User, X, Eye } from 'lucide-react';
 import { useState } from 'react';
 
 export default function UserManagementPage() {
@@ -170,7 +170,13 @@ export default function UserManagementPage() {
                     <td className="px-6 py-4 text-sm text-gray-500 font-medium">
                       {new Date(user.createdAt).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-4 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+                    <td className="px-6 py-4 text-right opacity-0 group-hover:opacity-100 transition-opacity flex justify-end gap-2">
+                      <button
+                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400 transition-colors"
+                        title="View Detailed Access"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
                       <button
                         onClick={() => handleDelete(user._id, user.email)}
                         className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 transition-colors"

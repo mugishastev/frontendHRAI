@@ -124,6 +124,10 @@ export default function AdminDashboard() {
                       <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.3}/>
                       <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}/>
                     </linearGradient>
+                    <linearGradient id="colorShort" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                    </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" opacity={0.5} />
                   <XAxis 
@@ -140,15 +144,25 @@ export default function AdminDashboard() {
                   />
                   <Tooltip 
                     contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}
-                    itemStyle={{fontWeight: 'bold', color: '#4f46e5'}}
+                    itemStyle={{fontWeight: 'bold'}}
                   />
                   <Area 
                     type="monotone" 
                     dataKey="count" 
+                    name="Total Applied"
                     stroke="#4f46e5" 
                     strokeWidth={4}
                     fillOpacity={1} 
                     fill="url(#colorCount)" 
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="shortlisted" 
+                    name="AI Shortlisted"
+                    stroke="#10b981" 
+                    strokeWidth={4}
+                    fillOpacity={1} 
+                    fill="url(#colorShort)" 
                   />
                 </AreaChart>
               </ResponsiveContainer>

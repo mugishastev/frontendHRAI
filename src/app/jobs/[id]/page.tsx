@@ -3,7 +3,7 @@
 import DashboardLayout from '@/components/DashboardLayout';
 import { useGetJobsQuery, useGetApplicantsQuery, useRunScreeningMutation, useUpdateApplicantStatusMutation } from '@/store/api';
 import { useRouter } from 'next/navigation';
-import { BrainCircuit, Users, FileText, ArrowRight, CheckCircle2, XCircle, Mail, MessageSquare } from 'lucide-react';
+import { BrainCircuit, Users, FileText, ArrowRight, CheckCircle2, XCircle, Mail, MessageSquare, Eye } from 'lucide-react';
 import Link from 'next/link';
 import { use } from 'react';
 
@@ -121,6 +121,9 @@ export default function JobDetailsPage(props: { params: Promise<{ id: string }> 
                            </td>
                            <td className="px-6 py-4 text-right">
                               <div className="flex justify-end gap-1">
+                                 <button className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/10 transition-colors" title="View Full Profile">
+                                    <Eye className="w-4 h-4" />
+                                 </button>
                                  <button onClick={() => setStatus(app._id, 'shortlisted')} className="p-1.5 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 dark:bg-green-900/10 transition-colors" title="Shortlist">
                                    <CheckCircle2 className="w-4 h-4" />
                                  </button>

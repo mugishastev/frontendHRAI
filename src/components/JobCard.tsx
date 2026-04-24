@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Edit, Trash2, ArrowRight } from 'lucide-react';
+import { Edit, Trash2, ArrowRight, Eye } from 'lucide-react';
 
 export default function JobCard({ job, onEdit, onDelete }: { job: any, onEdit?: (id: string) => void, onDelete?: (id: string) => void }) {
     return (
@@ -13,14 +13,17 @@ export default function JobCard({ job, onEdit, onDelete }: { job: any, onEdit?: 
             <span className="bg-primary-100 text-primary-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
               Active
             </span>
-            {onDelete && (
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {onEdit && (
-                        <button onClick={() => onEdit(job._id)} className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100" title="Edit Role"><Edit className="w-3.5 h-3.5" /></button>
-                    )}
+            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Link href={`/jobs/${job._id || job.id}`} className="p-1.5 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100" title="View Details">
+                  <Eye className="w-3.5 h-3.5" />
+                </Link>
+                {onEdit && (
+                    <button onClick={() => onEdit(job._id)} className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100" title="Edit Role"><Edit className="w-3.5 h-3.5" /></button>
+                )}
+                {onDelete && (
                     <button onClick={() => onDelete(job._id)} className="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100" title="Delete Role"><Trash2 className="w-3.5 h-3.5" /></button>
-                </div>
-            )}
+                )}
+            </div>
           </div>
         </div>
         
