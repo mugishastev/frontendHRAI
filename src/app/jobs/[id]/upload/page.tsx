@@ -14,7 +14,7 @@ export default function UploadCandidatePage(props: { params: Promise<{ id: strin
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [bulkUpload, { isLoading }] = useBulkUploadApplicantsMutation();
-  const [jsonInput, setJsonInput] = useState('[\n  {\n    "name": "Jane Doe",\n    "email": "jane@example.com",\n    "skills": ["React", "Typescript", "Node.js"],\n    "experience": "4 Years",\n    "education": "BSc Computer Science",\n    "structuredProfile": { "linkedin": "linked.com/in/jane", "github": "github.com/jane" }\n  }\n]');
+  const [jsonInput, setJsonInput] = useState('[\n  {\n    "name": "Jane Doe",\n    "email": "jane@example.com",\n    "phone": "+250 788 123 456",\n    "skills": ["React", "Typescript", "Node.js"],\n    "experience": "4 Years",\n    "education": "BSc Computer Science",\n    "structuredProfile": { "linkedin": "linked.com/in/jane", "github": "github.com/jane" }\n  }\n]');
   const [uploadMode, setUploadMode] = useState<'json' | 'csv'>('json');
   const [error, setError] = useState<string | null>(null);
 
