@@ -90,6 +90,7 @@ export default function Sidebar() {
               <NavGroup label="Recruitment Menu">
                 <NavItem href="/dashboard" icon={<Home className="w-4.5 h-4.5" />} label="Dashboard" active={pathname === '/dashboard'} />
                 <NavItem href="/manage-jobs" icon={<Briefcase className="w-4.5 h-4.5" />} label="Manage Jobs" active={pathname === '/manage-jobs'} />
+                <NavItem href="/shortlist-hub" icon={<ShieldCheck className="w-4.5 h-4.5" />} label="Shortlist Hub" active={pathname === '/shortlist-hub'} />
                 <NavItem href="/hiring-crm" icon={<Users className="w-4.5 h-4.5" />} label="Manage Applicants" active={pathname === '/hiring-crm'} />
                 <NavItem href="/batch-ops" icon={<Cpu className="w-4.5 h-4.5" />} label="AI Screening" active={pathname === '/batch-ops'} />
               </NavGroup>
@@ -106,6 +107,7 @@ export default function Sidebar() {
             <>
               <NavGroup label="Platform Oversight">
                 <NavItem href="/dashboard" icon={<Home className="w-4.5 h-4.5" />} label="System Dashboard" active={pathname === '/dashboard'} />
+                <NavItem href="/shortlist-hub" icon={<ShieldCheck className="w-4.5 h-4.5" />} label="Shortlist Hub" active={pathname === '/shortlist-hub'} />
                 <NavItem href="/insights" icon={<BarChart3 className="w-4.5 h-4.5" />} label="Global Analytics" active={pathname === '/insights'} />
                 <NavItem href="/batch-ops" icon={<Cpu className="w-4.5 h-4.5" />} label="Bulk Actions" active={pathname === '/batch-ops'} />
               </NavGroup>
