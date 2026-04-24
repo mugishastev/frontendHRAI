@@ -67,7 +67,7 @@ export default function InsightsPage() {
                       title={`${day.count} applications`}
                     />
                     <span className="text-[10px] text-gray-400 font-medium">
-                      {new Date(day.date).toLocaleDateString('en', { weekday: 'short' })}
+                      {day.date}
                     </span>
                   </div>
                 ))}
