@@ -1,7 +1,7 @@
 'use client'
 
 import DashboardLayout from '@/components/DashboardLayout';
-import { useGetJobsQuery, useGetCRMApplicantsQuery, useUpdateApplicantStatusMutation, useGetScreeningQuery, useTranscribeApplicantMutation } from '@/store/api';
+import { useGetJobsQuery, useGetCRMApplicantsQuery, useUpdateApplicantStatusMutation, useGetScreeningQuery, useTranscribeApplicantMutation, useUpdateApplicantMutation, useBulkUpdateApplicantStatusMutation } from '@/store/api';
 import { useState, useMemo, useEffect } from 'react';
 import { 
   Users, 
@@ -20,13 +20,15 @@ import {
   ShieldCheck,
   AlertTriangle,
   Info,
-  BadgeCheck,
-  Zap,
-  GraduationCap,
-  History,
-  MapPin,
   UserCircle,
-  FileSearch
+  FileSearch,
+  Check,
+  Plus,
+  Table as TableIcon,
+  Calendar as CalendarIcon,
+  Tag as TagIcon,
+  MessageSquare,
+  BadgeCheck
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -34,11 +36,19 @@ export default function ShortlistHub() {
   const { data: jobs, isLoading: jobsLoading } = useGetJobsQuery();
   const { data: allApplicants, isLoading: appsLoading, refetch } = useGetCRMApplicantsQuery();
   const [updateStatus] = useUpdateApplicantStatusMutation();
+  const [updateApplicant] = useUpdateApplicantMutation();
+  const [bulkUpdateStatus] = useBulkUpdateApplicantStatusMutation();
   const [transcribeApplicant, { isLoading: isTranscribing }] = useTranscribeApplicantMutation();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedJobId, setSelectedJobId] = useState<string>('all');
   const [selectedApplicant, setSelectedApplicant] = useState<any>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [showComparison, setShowComparison] = useState(false);
+  const [activeTab, setActiveTab] = useState<'ai' | 'notes' | 'tags' | 'resume'>('ai');
+  const [showResumePreview, setShowResumePreview] = useState(false);
+  const [noteText, setNoteText] = useState('');
+  const [tagInput, setTagInput] = useState('');
 
   useEffect(() => {
     if (selectedApplicant && !selectedApplicant.resumeText && selectedApplicant.resumeUrl) {
@@ -75,6 +85,82 @@ export default function ShortlistHub() {
       }
     } catch (err) {
       console.error('Failed to update status', err);
+    }
+  };
+
+  const handleBulkStatusUpdate = async (status: string) => {
+    try {
+      await bulkUpdateStatus({ ids: selectedIds, status }).unwrap();
+      setSelectedIds([]);
+      refetch();
+    } catch (err) {
+      console.error('Failed to bulk update status', err);
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
+  const handleAddNote = async () => {
+    if (!noteText.trim() || !selectedApplicant) return;
+    try {
+      const newNote = {
+        content: noteText,
+        author: localStorage.getItem('umurava_email') || 'Recruiter',
+        createdAt: new Date()
+      };
+      const updatedNotes = [...(selectedApplicant.notes || []), newNote];
+      await updateApplicant({ 
+        id: selectedApplicant._id, 
+        body: { notes: updatedNotes } 
+      }).unwrap();
+      setSelectedApplicant({ ...selectedApplicant, notes: updatedNotes });
+      setNoteText('');
+    } catch (err) {
+      console.error('Failed to add note', err);
+    }
+  };
+
+  const handleAddTag = async () => {
+    if (!tagInput.trim() || !selectedApplicant) return;
+    try {
+      const updatedTags = [...(selectedApplicant.tags || []), tagInput.trim()];
+      await updateApplicant({ 
+        id: selectedApplicant._id, 
+        body: { tags: updatedTags } 
+      }).unwrap();
+      setSelectedApplicant({ ...selectedApplicant, tags: updatedTags });
+      setTagInput('');
+    } catch (err) {
+      console.error('Failed to add tag', err);
+    }
+  };
+
+  const handleRemoveTag = async (tag: string) => {
+    if (!selectedApplicant) return;
+    try {
+      const updatedTags = (selectedApplicant.tags || []).filter((t: string) => t !== tag);
+      await updateApplicant({ 
+        id: selectedApplicant._id, 
+        body: { tags: updatedTags } 
+      }).unwrap();
+      setSelectedApplicant({ ...selectedApplicant, tags: updatedTags });
+    } catch (err) {
+      console.error('Failed to remove tag', err);
+    }
+  };
+
+  const handleScheduleInterview = async (date: string) => {
+    if (!selectedApplicant) return;
+    try {
+      await updateApplicant({ 
+        id: selectedApplicant._id, 
+        body: { interviewDate: date, status: 'interviewing' } 
+      }).unwrap();
+      setSelectedApplicant({ ...selectedApplicant, interviewDate: date, status: 'interviewing' });
+    } catch (err) {
+      console.error('Failed to schedule interview', err);
     }
   };
 
@@ -164,8 +250,16 @@ export default function ShortlistHub() {
                 {filteredShortlist.map((app: any) => (
                   <div 
                     key={app._id} 
-                    className="bg-[var(--card)] border border-[var(--border)] p-6 rounded-3xl hover:shadow-xl transition-all group relative overflow-hidden"
+                    className={`bg-[var(--card)] border p-6 rounded-3xl hover:shadow-xl transition-all group relative overflow-hidden ${selectedIds.includes(app._id) ? 'border-primary-500 ring-4 ring-primary-500/10' : 'border-[var(--border)]'}`}
                   >
+                    <div className="absolute top-4 left-4 z-10">
+                       <input 
+                         type="checkbox"
+                         checked={selectedIds.includes(app._id)}
+                         onChange={() => toggleSelect(app._id)}
+                         className="w-5 h-5 rounded-lg border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                       />
+                    </div>
                     <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition-opacity">
                        <button 
                          onClick={() => setSelectedApplicant(app)}
@@ -222,6 +316,149 @@ export default function ShortlistHub() {
           </div>
         </div>
 
+        {/* Floating Bulk Action Bar */}
+        {selectedIds.length > 0 && (
+          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-8 py-4 rounded-[32px] shadow-2xl flex items-center gap-8 z-50 border border-white/10 animate-in slide-in-from-bottom-10">
+            <div className="flex items-center gap-3 pr-8 border-r border-white/10">
+              <div className="bg-primary-600 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">
+                {selectedIds.length}
+              </div>
+              <span className="font-bold text-sm">Candidates Selected</span>
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => handleBulkStatusUpdate('interviewing')}
+                className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold transition-all flex items-center gap-2"
+              >
+                <CalendarIcon className="w-4 h-4" />
+                Schedule Interviews
+              </button>
+              <button 
+                onClick={() => handleBulkStatusUpdate('rejected')}
+                className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl text-xs font-bold transition-all flex items-center gap-2"
+              >
+                <XCircle className="w-4 h-4" />
+                Bulk Reject
+              </button>
+              <button 
+                onClick={() => setShowComparison(true)}
+                className="px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-2"
+              >
+                <TableIcon className="w-4 h-4" />
+                Compare Side-by-Side
+              </button>
+            </div>
+
+            <button 
+              onClick={() => setSelectedIds([])}
+              className="ml-4 p-2 hover:bg-white/10 rounded-full transition-all"
+            >
+              <XCircle className="w-5 h-5" />
+            </button>
+          </div>
+        )}
+
+        {/* Side-by-Side Comparison Modal */}
+        {showComparison && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-8 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+            <div className="bg-white dark:bg-[#0f172a] w-full max-w-6xl rounded-[40px] shadow-2xl overflow-hidden border border-white/10 flex flex-col h-full max-h-[90vh]">
+              <div className="p-8 border-b border-[var(--border)] flex justify-between items-center">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-primary-100 text-primary-600 rounded-2xl">
+                    <TableIcon className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-black">Talent Comparison Matrix</h2>
+                    <p className="text-gray-500 text-xs uppercase font-bold tracking-widest mt-1">Cross-referencing {selectedIds.length} top candidates</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowComparison(false)} className="p-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all">
+                  <XCircle className="w-8 h-8 text-gray-400" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-auto p-8">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr>
+                      <th className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-[var(--border)] font-bold text-xs uppercase text-gray-400 sticky left-0 z-10">Candidate</th>
+                      {selectedIds.map(id => {
+                        const app = allApplicants?.find(a => a._id === id);
+                        return (
+                          <th key={id} className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-[var(--border)] min-w-[250px]">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-primary-100 text-primary-600 rounded-xl flex items-center justify-center font-bold">{app?.name[0]}</div>
+                              <span className="font-bold text-gray-900 dark:text-white">{app?.name}</span>
+                            </div>
+                          </th>
+                        );
+                      })}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--border)]">
+                    <tr>
+                      <td className="p-4 font-bold text-xs uppercase text-gray-400 sticky left-0 bg-white dark:bg-[#0f172a] border-r border-[var(--border)]">Match Score</td>
+                      {selectedIds.map(id => {
+                        const app = allApplicants?.find(a => a._id === id);
+                        return (
+                          <td key={id} className="p-4">
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                <div className="h-full bg-primary-600 rounded-full" style={{ width: `${app?.matchScore || 0}%` }} />
+                              </div>
+                              <span className="font-black text-primary-600">{app?.matchScore || 0}%</span>
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                    <tr>
+                      <td className="p-4 font-bold text-xs uppercase text-gray-400 sticky left-0 bg-white dark:bg-[#0f172a] border-r border-[var(--border)]">Verified Skills</td>
+                      {selectedIds.map(id => {
+                        const app = allApplicants?.find(a => a._id === id);
+                        return (
+                          <td key={id} className="p-4">
+                            <div className="flex flex-wrap gap-1">
+                              {(app?.skillsVerification?.verified || app?.extractedSkills || []).slice(0, 5).map((s: string, i: number) => (
+                                <span key={i} className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[9px] font-bold">{s}</span>
+                              ))}
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                    <tr>
+                      <td className="p-4 font-bold text-xs uppercase text-gray-400 sticky left-0 bg-white dark:bg-[#0f172a] border-r border-[var(--border)]">Experience</td>
+                      {selectedIds.map(id => {
+                        const app = allApplicants?.find(a => a._id === id);
+                        return (
+                          <td key={id} className="p-4 text-sm text-gray-500 leading-relaxed italic">
+                            "{app?.experience?.substring(0, 100)}..."
+                          </td>
+                        );
+                      })}
+                    </tr>
+                    <tr>
+                      <td className="p-4 font-bold text-xs uppercase text-gray-400 sticky left-0 bg-white dark:bg-[#0f172a] border-r border-[var(--border)]">AI Recommendation</td>
+                      {selectedIds.map(id => {
+                        const app = allApplicants?.find(a => a._id === id);
+                        return (
+                          <td key={id} className="p-4">
+                            <div className="p-3 bg-primary-50 dark:bg-primary-900/10 border border-primary-100 dark:border-primary-900/30 rounded-2xl text-[10px] text-primary-700 leading-relaxed">
+                              {app?.aiRecommendation || "Analysis pending..."}
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Integrated Data Detail Overlay */}
         {selectedApplicant && (
            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
@@ -240,235 +477,249 @@ export default function ShortlistHub() {
                           </div>
                        </div>
                     </div>
-                    <button onClick={() => setSelectedApplicant(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
+                    <button onClick={() => { setSelectedApplicant(null); setActiveTab('ai'); setShowResumePreview(false); }} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
                        <XCircle className="w-6 h-6 text-gray-400" />
                     </button>
                  </div>
 
-                 <div className="p-8 overflow-y-auto space-y-8 scrollbar-thin">
-                    <section className="grid grid-cols-2 gap-6">
-                       <div className="space-y-1">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Email Address</label>
-                          <div className="flex items-center gap-2 text-sm font-medium">
-                             <Mail className="w-4 h-4 text-primary-500" />
+                 {/* CRM Tabs */}
+                 <div className="flex px-8 border-b border-[var(--border)] bg-gray-50/30 dark:bg-gray-900/20">
+                    {[
+                      { id: 'ai', label: 'AI Intelligence', icon: Brain },
+                      { id: 'notes', label: 'Notes', icon: MessageSquare },
+                      { id: 'tags', label: 'Tags', icon: TagIcon },
+                      { id: 'resume', label: 'Resume', icon: FileSearch }
+                    ].map(tab => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id as any)}
+                        className={`flex items-center gap-2 px-6 py-4 text-xs font-bold uppercase tracking-widest transition-all relative ${
+                          activeTab === tab.id ? 'text-primary-600' : 'text-gray-400 hover:text-gray-600'
+                        }`}
+                      >
+                        <tab.icon className="w-4 h-4" />
+                        {tab.label}
+                        {activeTab === tab.id && <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary-600 rounded-full" />}
+                      </button>
+                    ))}
+                 </div>
+                 <div className="p-8 overflow-y-auto flex-1 scrollbar-thin">
+                    {activeTab === 'ai' && (
+                      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <section className="grid grid-cols-2 gap-4 bg-gray-50/50 dark:bg-gray-900/30 p-4 rounded-3xl border border-[var(--border)]">
+                       <div className="space-y-0.5">
+                          <label className="text-[9px] font-black uppercase tracking-widest text-gray-400">Email</label>
+                          <div className="flex items-center gap-2 text-xs font-bold truncate">
+                             <Mail className="w-3.5 h-3.5 text-primary-500 shrink-0" />
                              {selectedApplicant.email}
                           </div>
                        </div>
-                       <div className="space-y-1">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Phone Number</label>
-                          <div className="flex items-center gap-2 text-sm font-medium">
-                             <Phone className="w-4 h-4 text-primary-500" />
+                       <div className="space-y-0.5">
+                          <label className="text-[9px] font-black uppercase tracking-widest text-gray-400">Phone</label>
+                          <div className="flex items-center gap-2 text-xs font-bold">
+                             <Phone className="w-3.5 h-3.5 text-primary-500 shrink-0" />
                              {selectedApplicant.phone || 'N/A'}
                           </div>
                        </div>
                     </section>
 
-                    <section className="space-y-3">
-                       <h4 className="text-sm font-bold flex items-center gap-2">
-                          <Brain className="w-4 h-4 text-indigo-500" />
-                          AI Intelligence Insight
-                       </h4>
-                        <div className="p-5 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-2xl border border-indigo-100 dark:border-indigo-900/40">
-                           <div className="flex justify-between items-center mb-3">
-                              <span className="text-xs font-bold text-indigo-600">Match Score</span>
-                              <span className="text-xl font-black text-indigo-700">
-                                {selectedApplicant.matchScore != null ? `${selectedApplicant.matchScore}%` : 'N/A'}
-                              </span>
-                           </div>
-                           <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed italic mb-3">
-                              &ldquo;{selectedApplicant.aiReasoning || 'No AI insights available. Run AI Screening on this job to generate insights.'}&rdquo;
-                           </p>
-                           {selectedApplicant.aiRecommendation && (
-                             <div className="mt-2 pt-2 border-t border-indigo-100 dark:border-indigo-900/40">
-                               <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400 block mb-1">AI Recommendation</span>
-                               <p className="text-xs text-indigo-700 dark:text-indigo-300 font-medium">{selectedApplicant.aiRecommendation}</p>
-                             </div>
-                           )}
-                           {selectedApplicant.strengths?.length > 0 && (
-                             <div className="mt-2 pt-2 border-t border-indigo-100 dark:border-indigo-900/40 flex flex-wrap gap-1">
-                               <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500 w-full mb-1">Strengths</span>
-                               {selectedApplicant.strengths.map((s: string, i: number) => (
-                                 <span key={i} className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded text-[10px] font-semibold">{s}</span>
-                               ))}
-                             </div>
-                           )}
-                           {selectedApplicant.gaps?.length > 0 && (
-                             <div className="mt-2 pt-2 border-t border-indigo-100 dark:border-indigo-900/40 flex flex-wrap gap-1">
-                               <span className="text-[10px] font-black uppercase tracking-widest text-amber-500 w-full mb-1">Gaps</span>
-                               {selectedApplicant.gaps.map((g: string, i: number) => (
-                                 <span key={i} className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded text-[10px] font-semibold">{g}</span>
-                               ))}
-                             </div>
-                           )}
-                        </div>
-                    </section>
-
-                    {/* NEW: Resume Structure & Quality */}
-                    {selectedApplicant.structuredProfile && (
-                       <section className="space-y-4">
-                          <h4 className="text-sm font-bold flex items-center gap-2">
-                             <FileSearch className="w-4 h-4 text-blue-500" />
-                             Resume Structure & Quality
-                          </h4>
-                          <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-3xl border border-[var(--border)]">
-                             <div className="flex justify-between items-center mb-6">
-                                <div>
-                                   <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Completeness Score</span>
-                                   <div className="text-3xl font-black text-blue-600">{selectedApplicant.structuredProfile.completenessScore}%</div>
-                                </div>
-                                <div className="flex gap-1">
-                                   {[20, 40, 60, 80, 100].map(step => (
-                                      <div key={step} className={`w-8 h-2 rounded-full ${selectedApplicant.structuredProfile.completenessScore >= step ? 'bg-blue-500' : 'bg-gray-200 dark:bg-gray-800'}`} />
+                        <section className="space-y-3">
+                           <h4 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-indigo-500">
+                           <BadgeCheck className="w-4 h-4" />
+                           AI Skill Verification & Insight
+                        </h4>
+                            <div className="p-4 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-2xl border border-indigo-100 dark:border-indigo-900/40 shadow-sm">
+                               <div className="flex justify-between items-center mb-3">
+                                  <span className="text-xs font-bold text-indigo-600">Match Score</span>
+                                  <span className="text-xl font-black text-indigo-700">
+                                    {selectedApplicant.matchScore != null ? `${selectedApplicant.matchScore}%` : 'N/A'}
+                                  </span>
+                               </div>
+                               <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed italic mb-3">
+                                  &ldquo;{selectedApplicant.aiReasoning || 'No AI insights available. Run AI Screening on this job to generate insights.'}&rdquo;
+                                </p>
+                               {selectedApplicant.aiRecommendation && (
+                                 <div className="mt-2 pt-2 border-t border-indigo-100 dark:border-indigo-900/40">
+                                   <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400 block mb-1">AI Recommendation</span>
+                                   <p className="text-xs text-indigo-700 dark:text-indigo-300 font-medium">{selectedApplicant.aiRecommendation}</p>
+                                 </div>
+                               )}
+                               {selectedApplicant.strengths?.length > 0 && (
+                                 <div className="mt-2 pt-2 border-t border-indigo-100 dark:border-indigo-900/40 flex flex-wrap gap-1">
+                                   <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500 w-full mb-1">Strengths</span>
+                                   {selectedApplicant.strengths.map((s: string, i: number) => (
+                                     <span key={i} className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded text-[10px] font-semibold">{s}</span>
                                    ))}
-                                </div>
-                             </div>
-
-                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {[
-                                   { label: 'Contact Info', key: 'contact', icon: <UserCircle className="w-3.5 h-3.5" /> },
-                                   { label: 'Summary', key: 'summary', icon: <Info className="w-3.5 h-3.5" /> },
-                                   { label: 'Experience', key: 'experience', icon: <History className="w-3.5 h-3.5" /> },
-                                   { label: 'Skills', key: 'skills', icon: <Zap className="w-3.5 h-3.5" /> },
-                                   { label: 'Education', key: 'education', icon: <GraduationCap className="w-3.5 h-3.5" /> },
-                                ].map(section => {
-                                   const exists = !!selectedApplicant.structuredProfile[section.key];
-                                   return (
-                                      <div key={section.key} className={`flex items-center justify-between p-3 rounded-xl border ${exists ? 'bg-white dark:bg-gray-800 border-emerald-100 dark:border-emerald-900/30 text-emerald-700 dark:text-emerald-400' : 'bg-gray-50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-800 text-gray-400'}`}>
-                                         <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider">
-                                            {section.icon}
-                                            {section.label}
-                                         </div>
-                                         {exists ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4 opacity-30" />}
-                                      </div>
-                                   );
-                                })}
-                             </div>
-                          </div>
-                       </section>
+                                 </div>
+                               )}
+                               {selectedApplicant.gaps?.length > 0 && (
+                                 <div className="mt-2 pt-2 border-t border-indigo-100 dark:border-indigo-900/40 flex flex-wrap gap-1">
+                                   <span className="text-[10px] font-black uppercase tracking-widest text-amber-500 w-full mb-1">Gaps</span>
+                                   {selectedApplicant.gaps.map((g: string, i: number) => (
+                                     <span key={i} className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded text-[10px] font-semibold">{g}</span>
+                                   ))}
+                                 </div>
+                               )}
+                            </div>
+                        </section>
+                      </div>
                     )}
 
-                    <section className="space-y-3">
-                       <h4 className="text-sm font-bold flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-emerald-500" />
-                          Resume Transcription
-                       </h4>
-                       <div className="p-5 bg-gray-50 dark:bg-gray-800 rounded-2xl text-xs font-mono text-gray-500 leading-relaxed max-h-48 overflow-y-auto">
-                          {isTranscribing ? (
-                             <div className="flex items-center gap-2 text-primary-600 animate-pulse">
-                                <Brain className="w-4 h-4 animate-spin" />
-                                AI is transcribing resume...
-                             </div>
+                    {activeTab === 'notes' && (
+                      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300 h-full flex flex-col">
+                        <div className="flex-1 space-y-4">
+                          {(!selectedApplicant.notes || selectedApplicant.notes.length === 0) ? (
+                            <div className="p-12 text-center bg-gray-50 dark:bg-gray-900/40 rounded-[32px] border border-dashed border-gray-200">
+                              <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                              <p className="text-gray-500 text-sm">No internal notes yet. Add your first feedback below.</p>
+                            </div>
                           ) : (
-                             selectedApplicant.resumeText || 'No transcript available.'
-                          )}
-                       </div>
-                    </section>
-
-                    {/* NEW: Skill Verification Section */}
-                    {(selectedApplicant.skillsVerification || selectedApplicant.extractedSkills?.length > 0) && (
-                       <section className="space-y-4">
-                          <h4 className="text-sm font-bold flex items-center gap-2">
-                             <BadgeCheck className="w-4 h-4 text-primary-500" />
-                             AI Skill Verification
-                          </h4>
-                          <div className="grid grid-cols-1 gap-4">
-                             {/* Verified Skills */}
-                             {selectedApplicant.skillsVerification?.verified?.length > 0 && (
-                                <div className="p-4 bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl">
-                                   <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 block mb-2">Verified in Resume</span>
-                                   <div className="flex flex-wrap gap-1.5">
-                                      {selectedApplicant.skillsVerification.verified.map((s: string, i: number) => (
-                                         <span key={i} className="px-2 py-1 bg-emerald-100 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-300 rounded-lg text-[10px] font-bold flex items-center gap-1">
-                                            <BadgeCheck className="w-3 h-3" /> {s}
-                                         </span>
-                                      ))}
-                                   </div>
+                            selectedApplicant.notes.map((note: any, i: number) => (
+                              <div key={i} className="p-5 bg-white dark:bg-gray-900 border border-[var(--border)] rounded-2xl shadow-sm">
+                                <div className="flex justify-between items-start mb-2">
+                                  <span className="text-[10px] font-black text-primary-600 uppercase tracking-widest">{note.author}</span>
+                                  <span className="text-[10px] text-gray-400 font-bold">{new Date(note.createdAt).toLocaleDateString()}</span>
                                 </div>
-                             )}
-
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {/* Claimed but Missing */}
-                                {selectedApplicant.skillsVerification?.claimedButMissing?.length > 0 && (
-                                   <div className="p-4 bg-red-50/50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-2xl">
-                                      <span className="text-[10px] font-black uppercase tracking-widest text-red-600 block mb-2 flex items-center gap-1">
-                                         <AlertTriangle className="w-3 h-3" /> Claimed but Missing
-                                      </span>
-                                      <div className="flex flex-wrap gap-1.5">
-                                         {selectedApplicant.skillsVerification.claimedButMissing.map((s: string, i: number) => (
-                                            <span key={i} className="px-2 py-1 bg-red-100 dark:bg-red-800 text-red-700 dark:text-red-300 rounded-lg text-[10px] font-bold line-through opacity-70">
-                                               {s}
-                                            </span>
-                                         ))}
-                                      </div>
-                                   </div>
-                                )}
-
-                                {/* Hidden Gems */}
-                                {selectedApplicant.skillsVerification?.hiddenGems?.length > 0 && (
-                                   <div className="p-4 bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-2xl">
-                                      <span className="text-[10px] font-black uppercase tracking-widest text-amber-600 block mb-2 flex items-center gap-1">
-                                         <Zap className="w-3 h-3" /> Hidden Gems
-                                      </span>
-                                      <div className="flex flex-wrap gap-1.5">
-                                         {selectedApplicant.skillsVerification.hiddenGems.map((s: string, i: number) => (
-                                            <span key={i} className="px-2 py-1 bg-amber-100 dark:bg-amber-800 text-amber-700 dark:text-amber-300 rounded-lg text-[10px] font-bold">
-                                               {s}
-                                            </span>
-                                         ))}
-                                      </div>
-                                   </div>
-                                )}
-                             </div>
-                          </div>
-                       </section>
+                                <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{note.content}</p>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                        <div className="sticky bottom-0 bg-white dark:bg-[#0f172a] pt-4 border-t border-[var(--border)]">
+                          <textarea 
+                            value={noteText}
+                            onChange={(e) => setNoteText(e.target.value)}
+                            placeholder="Add a private note about this candidate..."
+                            className="w-full p-4 bg-gray-50 dark:bg-gray-900 border border-[var(--border)] rounded-2xl text-sm focus:ring-4 focus:ring-primary-500/10 outline-none transition-all resize-none h-24"
+                          />
+                          <button 
+                            onClick={handleAddNote}
+                            disabled={!noteText.trim()}
+                            className="mt-3 w-full py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-500 transition-all disabled:opacity-50"
+                          >
+                            Add Internal Note
+                          </button>
+                        </div>
+                      </div>
                     )}
-                 </div>
 
-                 <div className="p-8 border-t border-[var(--border)] bg-gray-50/50 dark:bg-gray-900/50 flex justify-between gap-4">
-                    <div className="flex gap-2">
-                       <button 
-                         onClick={() => handleStatusUpdate(selectedApplicant._id, 'interviewing')}
-                         className="px-6 py-2.5 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-500 shadow-lg shadow-primary-500/20 transition-all"
-                       >
-                         Move to Interview
-                       </button>
-                       <button 
-                         onClick={() => handleStatusUpdate(selectedApplicant._id, 'rejected')}
-                         className="px-6 py-2.5 bg-white dark:bg-gray-800 border border-[var(--border)] rounded-xl font-bold hover:bg-red-50 hover:text-red-600 transition-all"
-                       >
-                         Reject Candidate
-                       </button>
-                    </div>
-                    {/* NEW: Embedded CV Viewer */}
-                    {selectedApplicant.resumeUrl && (
-                       <div className="mt-8 space-y-4">
-                          <h4 className="text-sm font-bold flex items-center gap-2">
-                             <Eye className="w-4 h-4 text-primary-500" />
-                             Original Resume Preview
-                          </h4>
-                          <div className="w-full h-[600px] rounded-3xl overflow-hidden border border-[var(--border)] bg-gray-100 dark:bg-gray-900 shadow-inner">
-                             <iframe 
+                    {activeTab === 'tags' && (
+                      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <div className="space-y-4">
+                          <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Current Tags</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {(!selectedApplicant.tags || selectedApplicant.tags.length === 0) ? (
+                              <p className="text-gray-400 text-sm italic">No tags assigned yet.</p>
+                            ) : (
+                              selectedApplicant.tags.map((tag: string, i: number) => (
+                                <span key={i} className="group flex items-center gap-2 px-3 py-1.5 bg-primary-50 text-primary-700 rounded-full text-xs font-bold border border-primary-100">
+                                  <TagIcon className="w-3 h-3" />
+                                  {tag}
+                                  <button onClick={() => handleRemoveTag(tag)} className="hover:text-red-500 transition-colors">
+                                    <XCircle className="w-3.5 h-3.5" />
+                                  </button>
+                                </span>
+                              ))
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="p-6 bg-gray-50 dark:bg-gray-900/40 rounded-3xl border border-[var(--border)] space-y-4">
+                          <h4 className="text-sm font-bold">Add New Label</h4>
+                          <div className="flex gap-2">
+                            <input 
+                              type="text"
+                              value={tagInput}
+                              onChange={(e) => setTagInput(e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
+                              placeholder="e.g. Culture Fit, Strong Lead..."
+                              className="flex-1 px-4 py-2 bg-white dark:bg-gray-900 border border-[var(--border)] rounded-xl text-sm focus:ring-4 focus:ring-primary-500/10 outline-none transition-all"
+                            />
+                            <button 
+                              onClick={handleAddTag}
+                              className="px-4 py-2 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-500 transition-all"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {activeTab === 'resume' && (
+                      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300 h-full flex flex-col items-center justify-center min-h-[400px]">
+                        {selectedApplicant.resumeUrl ? (
+                          !showResumePreview ? (
+                            <div className="text-center p-12 bg-gray-50 dark:bg-gray-900/40 rounded-[40px] border border-dashed border-[var(--border)] max-w-sm w-full">
+                               <div className="w-16 h-16 bg-primary-100 text-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm">
+                                  <FileText className="w-8 h-8" />
+                               </div>
+                               <h4 className="text-lg font-bold mb-2">Resume is ready</h4>
+                               <p className="text-gray-500 text-sm mb-8">Loading resumes uses high bandwidth. Click below to view the document.</p>
+                               <button 
+                                 onClick={() => setShowResumePreview(true)}
+                                 className="w-full py-4 bg-primary-600 text-white rounded-2xl font-black shadow-xl shadow-primary-500/20 hover:bg-primary-500 transition-all flex items-center justify-center gap-3"
+                               >
+                                  <Eye className="w-5 h-5" />
+                                  Load Resume Document
+                               </button>
+                            </div>
+                          ) : (
+                            <div className="w-full h-full min-h-[500px] rounded-3xl overflow-hidden border border-[var(--border)] bg-gray-100 dark:bg-gray-900 shadow-inner relative group">
+                              <iframe 
                                 src={selectedApplicant.resumeUrl.includes('cloudinary.com') 
                                    ? `https://docs.google.com/gview?url=${encodeURIComponent(selectedApplicant.resumeUrl)}&embedded=true`
                                    : selectedApplicant.resumeUrl
                                 } 
                                 className="w-full h-full border-none"
                                 title="Resume Preview"
-                             />
+                              />
+                              <button 
+                                onClick={() => setShowResumePreview(false)}
+                                className="absolute top-4 right-4 bg-gray-900/80 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all"
+                              >
+                                Hide Preview
+                              </button>
+                            </div>
+                          )
+                        ) : (
+                          <div className="p-20 text-center">
+                            <FileSearch className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+                            <p className="text-gray-500">No resume document found for this candidate.</p>
                           </div>
-                       </div>
+                        )}
+                      </div>
                     )}
+                 </div>
 
-                    {selectedApplicant.resumeUrl && (
-                       <a 
-                         href={selectedApplicant.resumeUrl.startsWith('http') ? selectedApplicant.resumeUrl : `https://${selectedApplicant.resumeUrl}`} 
-                         target="_blank"
-                         className="flex items-center gap-2 px-6 py-2.5 bg-gray-900 text-white rounded-xl font-bold hover:bg-black transition-all"
+                 <div className="p-8 border-t border-[var(--border)] bg-gray-50/50 dark:bg-gray-900/50 flex flex-col md:flex-row justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-black uppercase tracking-[0.2em] text-gray-400 block">Interview Schedule</label>
+                          <input 
+                            type="datetime-local"
+                            value={selectedApplicant.interviewDate ? new Date(selectedApplicant.interviewDate).toISOString().slice(0, 16) : ''}
+                            onChange={(e) => handleScheduleInterview(e.target.value)}
+                            className="bg-white dark:bg-gray-800 border border-[var(--border)] rounded-lg px-3 py-1.5 text-xs font-bold text-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-all"
+                          />
+                       </div>
+                    </div>
+                    <div className="flex gap-2 self-end">
+                       <button 
+                         onClick={() => handleStatusUpdate(selectedApplicant._id, 'rejected')}
+                         className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-[var(--border)] rounded-xl text-xs font-bold hover:bg-red-50 hover:text-red-600 transition-all shadow-sm"
                        >
-                         <FileText className="w-4 h-4" />
-                         Original PDF
-                       </a>
-                    )}
+                         <XCircle className="w-3.5 h-3.5" />
+                         Reject
+                       </button>
+                       <button 
+                         onClick={() => handleStatusUpdate(selectedApplicant._id, 'interviewing')}
+                         className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-xl text-xs font-bold hover:bg-primary-500 shadow-lg shadow-primary-500/20 transition-all"
+                       >
+                         <CalendarIcon className="w-3.5 h-3.5" />
+                         Interview
+                       </button>
+                    </div>
                  </div>
               </div>
            </div>

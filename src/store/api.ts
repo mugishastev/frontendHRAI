@@ -158,6 +158,14 @@ export const api = createApi({
       query: (id) => ({ url: `/notifications/${id}`, method: 'DELETE' }),
       invalidatesTags: ['Notification'],
     }),
+    updateApplicant: builder.mutation<any, { id: string; body: Partial<any> }>({
+      query: ({ id, body }) => ({ url: `/applicants/${id}`, method: 'PATCH', body }),
+      invalidatesTags: ['Applicant'],
+    }),
+    bulkUpdateApplicantStatus: builder.mutation<any, { ids: string[]; status: string }>({
+      query: (body) => ({ url: '/applicants/bulk-status', method: 'PATCH', body }),
+      invalidatesTags: ['Applicant'],
+    }),
     transcribeApplicant: builder.mutation<any, string>({
       query: (id) => ({ url: `/applicants/${id}/transcribe`, method: 'POST' }),
       invalidatesTags: ['Applicant'],
@@ -194,6 +202,8 @@ export const {
   useGoogleLoginMutation,
   useGetMyApplicationsQuery,
   useUpdateApplicantStatusMutation,
+  useUpdateApplicantMutation,
+  useBulkUpdateApplicantStatusMutation,
   useWithdrawApplicationMutation,
   useUploadResumeMutation,
   useTranscribeApplicantMutation,
