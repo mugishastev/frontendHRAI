@@ -150,6 +150,14 @@ export const api = createApi({
         body: formData,
       }),
     }),
+    markNotificationRead: builder.mutation<any, string>({
+      query: (id) => ({ url: `/notifications/${id}/read`, method: 'PUT' }),
+      invalidatesTags: ['Notification'],
+    }),
+    deleteNotification: builder.mutation<any, string>({
+      query: (id) => ({ url: `/notifications/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['Notification'],
+    }),
     transcribeApplicant: builder.mutation<any, string>({
       query: (id) => ({ url: `/applicants/${id}/transcribe`, method: 'POST' }),
       invalidatesTags: ['Applicant'],
@@ -177,6 +185,8 @@ export const {
   useGetNotificationsQuery,
   useGetAuditLogsQuery,
   useMarkAllNotificationsReadMutation,
+  useMarkNotificationReadMutation,
+  useDeleteNotificationMutation,
   useLoginMutation,
   useRegisterMutation,
   useForgotPasswordMutation,

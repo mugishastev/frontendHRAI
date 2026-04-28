@@ -4,7 +4,7 @@ import Sidebar from './Sidebar';
 import { Bell, Search, User, ChevronRight, X, Loader2 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { useGetNotificationsQuery, useMarkAllNotificationsReadMutation, useSearchJobsQuery } from '@/store/api';
+import { useGetNotificationsQuery, useMarkAllNotificationsReadMutation, useSearchJobsQuery, useMarkNotificationReadMutation } from '@/store/api';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -16,6 +16,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const { data: notifications, isLoading: isNoteLoading } = useGetNotificationsQuery(userRole);
   const [markAllRead] = useMarkAllNotificationsReadMutation();
+  const [markRead] = useMarkNotificationReadMutation();
   const { data: searchResults, isFetching: isSearching } = useSearchJobsQuery(searchTerm, { skip: searchTerm.length < 2 });
   const [isReady, setIsReady] = useState(false);
 
@@ -146,16 +147,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           notifications?.map((note: any) => (
                             <NotificationItem 
                               key={note._id}
+                              id={note._id}
                               title={note.title} 
                               desc={note.desc}
                               time={new Date(note.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               badge={note.type === 'success' ? 'bg-green-500' : note.type === 'error' ? 'bg-red-500' : 'bg-primary-500'}
                               isRead={note.isRead}
+                              onClick={async (id) => {
+                                if (!note.isRead) await markRead(id);
+                              }}
                             />
                           ))
                         )}
                         <div className="p-3 text-center border-t border-[var(--border)]">
-                          <button className="text-xs font-bold text-gray-400 hover:text-primary-600 transition-colors">View All Notifications</button>
+                          <button 
+                            onClick={() => { router.push('/notifications'); setShowNotifications(false); }}
+                            className="text-xs font-bold text-gray-400 hover:text-primary-600 transition-colors"
+                          >
+                            View All Notifications
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -185,9 +195,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   );
 }
 
-function NotificationItem({ title, desc, time, badge, isRead }: { title: string, desc: string, time: string, badge: string, isRead: boolean }) {
+function NotificationItem({ id, title, desc, time, badge, isRead, onClick }: { id: string, title: string, desc: string, time: string, badge: string, isRead: boolean, onClick: (id: string) => void }) {
   return (
-    <div className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors border-b border-[var(--border)] last:border-0 cursor-pointer group ${!isRead ? 'bg-primary-500/5' : ''}`}>
+    <div 
+      onClick={() => onClick(id)}
+      className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors border-b border-[var(--border)] last:border-0 cursor-pointer group ${!isRead ? 'bg-primary-500/5' : ''}`}
+    >
       <div className="flex items-start space-x-3">
         <div className={`w-2 h-2 mt-1.5 rounded-full ${badge} flex-shrink-0 group-hover:scale-125 transition-transform ${!isRead ? 'animate-pulse' : 'opacity-40'}`}></div>
         <div className="flex-1 space-y-0.5">
