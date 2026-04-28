@@ -17,7 +17,7 @@ export default function Logo({ className = "", iconOnly = false, href }: LogoPro
       </div>
       {!iconOnly && (
         <span className="text-2xl font-black tracking-tight text-gray-900 dark:text-white">
-          HRAI <span className="text-primary-600 font-black">AI</span>
+          HR <span className="text-primary-600 font-black">AI</span>
         </span>
       )}
     </div>

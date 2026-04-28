@@ -246,15 +246,39 @@ export default function ShortlistHub() {
                           <Brain className="w-4 h-4 text-indigo-500" />
                           AI Intelligence Insight
                        </h4>
-                       <div className="p-5 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-2xl border border-indigo-100 dark:border-indigo-900/40">
-                          <div className="flex justify-between items-center mb-3">
-                             <span className="text-xs font-bold text-indigo-600">Match Score</span>
-                             <span className="text-xl font-black text-indigo-700">{selectedApplicant.matchScore || 'N/A'}%</span>
-                          </div>
-                          <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed italic">
-                             "{selectedApplicant.aiSummary || 'No AI insights available for this candidate.'}"
-                          </p>
-                       </div>
+                        <div className="p-5 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-2xl border border-indigo-100 dark:border-indigo-900/40">
+                           <div className="flex justify-between items-center mb-3">
+                              <span className="text-xs font-bold text-indigo-600">Match Score</span>
+                              <span className="text-xl font-black text-indigo-700">
+                                {selectedApplicant.matchScore != null ? `${selectedApplicant.matchScore}%` : 'N/A'}
+                              </span>
+                           </div>
+                           <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed italic mb-3">
+                              &ldquo;{selectedApplicant.aiReasoning || 'No AI insights available. Run AI Screening on this job to generate insights.'}&rdquo;
+                           </p>
+                           {selectedApplicant.aiRecommendation && (
+                             <div className="mt-2 pt-2 border-t border-indigo-100 dark:border-indigo-900/40">
+                               <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400 block mb-1">AI Recommendation</span>
+                               <p className="text-xs text-indigo-700 dark:text-indigo-300 font-medium">{selectedApplicant.aiRecommendation}</p>
+                             </div>
+                           )}
+                           {selectedApplicant.strengths?.length > 0 && (
+                             <div className="mt-2 pt-2 border-t border-indigo-100 dark:border-indigo-900/40 flex flex-wrap gap-1">
+                               <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500 w-full mb-1">Strengths</span>
+                               {selectedApplicant.strengths.map((s: string, i: number) => (
+                                 <span key={i} className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded text-[10px] font-semibold">{s}</span>
+                               ))}
+                             </div>
+                           )}
+                           {selectedApplicant.gaps?.length > 0 && (
+                             <div className="mt-2 pt-2 border-t border-indigo-100 dark:border-indigo-900/40 flex flex-wrap gap-1">
+                               <span className="text-[10px] font-black uppercase tracking-widest text-amber-500 w-full mb-1">Gaps</span>
+                               {selectedApplicant.gaps.map((g: string, i: number) => (
+                                 <span key={i} className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded text-[10px] font-semibold">{g}</span>
+                               ))}
+                             </div>
+                           )}
+                        </div>
                     </section>
 
                     <section className="space-y-3">
