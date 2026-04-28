@@ -1,7 +1,7 @@
 'use client'
 
 import DashboardLayout from '@/components/DashboardLayout';
-import { useGetJobsQuery, useGetCRMApplicantsQuery, useUpdateApplicantStatusMutation } from '@/store/api';
+import { useGetJobsQuery, useGetCRMApplicantsQuery, useUpdateApplicantStatusMutation, useGetScreeningQuery } from '@/store/api';
 import { useState, useMemo } from 'react';
 import { 
   Users, 
@@ -16,7 +16,10 @@ import {
   Mail,
   Phone,
   FileText,
-  Brain
+  Brain,
+  ShieldCheck,
+  AlertTriangle,
+  Info
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -28,6 +31,11 @@ export default function ShortlistHub() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedJobId, setSelectedJobId] = useState<string>('all');
   const [selectedApplicant, setSelectedApplicant] = useState<any>(null);
+
+  // Fetch screening data for the selected job (if one is selected)
+  const { data: screeningData, isLoading: screeningLoading } = useGetScreeningQuery(selectedJobId, { 
+    skip: selectedJobId === 'all' 
+  });
 
   // Filter only shortlisted applicants
   const shortlisted = useMemo(() => {
