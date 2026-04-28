@@ -21,7 +21,12 @@ import {
   AlertTriangle,
   Info,
   BadgeCheck,
-  Zap
+  Zap,
+  GraduationCap,
+  History,
+  MapPin,
+  UserCircle,
+  FileSearch
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -290,6 +295,50 @@ export default function ShortlistHub() {
                            )}
                         </div>
                     </section>
+
+                    {/* NEW: Resume Structure & Quality */}
+                    {selectedApplicant.structuredProfile && (
+                       <section className="space-y-4">
+                          <h4 className="text-sm font-bold flex items-center gap-2">
+                             <FileSearch className="w-4 h-4 text-blue-500" />
+                             Resume Structure & Quality
+                          </h4>
+                          <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-3xl border border-[var(--border)]">
+                             <div className="flex justify-between items-center mb-6">
+                                <div>
+                                   <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Completeness Score</span>
+                                   <div className="text-3xl font-black text-blue-600">{selectedApplicant.structuredProfile.completenessScore}%</div>
+                                </div>
+                                <div className="flex gap-1">
+                                   {[20, 40, 60, 80, 100].map(step => (
+                                      <div key={step} className={`w-8 h-2 rounded-full ${selectedApplicant.structuredProfile.completenessScore >= step ? 'bg-blue-500' : 'bg-gray-200 dark:bg-gray-800'}`} />
+                                   ))}
+                                </div>
+                             </div>
+
+                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {[
+                                   { label: 'Contact Info', key: 'contact', icon: <UserCircle className="w-3.5 h-3.5" /> },
+                                   { label: 'Summary', key: 'summary', icon: <Info className="w-3.5 h-3.5" /> },
+                                   { label: 'Experience', key: 'experience', icon: <History className="w-3.5 h-3.5" /> },
+                                   { label: 'Skills', key: 'skills', icon: <Zap className="w-3.5 h-3.5" /> },
+                                   { label: 'Education', key: 'education', icon: <GraduationCap className="w-3.5 h-3.5" /> },
+                                ].map(section => {
+                                   const exists = !!selectedApplicant.structuredProfile[section.key];
+                                   return (
+                                      <div key={section.key} className={`flex items-center justify-between p-3 rounded-xl border ${exists ? 'bg-white dark:bg-gray-800 border-emerald-100 dark:border-emerald-900/30 text-emerald-700 dark:text-emerald-400' : 'bg-gray-50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-800 text-gray-400'}`}>
+                                         <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider">
+                                            {section.icon}
+                                            {section.label}
+                                         </div>
+                                         {exists ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4 opacity-30" />}
+                                      </div>
+                                   );
+                                })}
+                             </div>
+                          </div>
+                       </section>
+                    )}
 
                     <section className="space-y-3">
                        <h4 className="text-sm font-bold flex items-center gap-2">
