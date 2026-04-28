@@ -1,7 +1,7 @@
 'use client'
 
 import DashboardLayout from '@/components/DashboardLayout';
-import { useGetJobsQuery, useGetCRMApplicantsQuery, useUpdateApplicantStatusMutation, useGetScreeningQuery, useTranscribeApplicantMutation, useUpdateApplicantMutation, useBulkUpdateApplicantStatusMutation } from '@/store/api';
+import { useGetJobsQuery, useGetCRMApplicantsQuery, useUpdateApplicantStatusMutation, useGetScreeningQuery, useTranscribeApplicantMutation, useUpdateApplicantMutation, useBulkUpdateApplicantStatusMutation, useSendMessageMutation } from '@/store/api';
 import { useState, useMemo, useEffect } from 'react';
 import { 
   Users, 
@@ -38,6 +38,7 @@ export default function ShortlistHub() {
   const [updateStatus] = useUpdateApplicantStatusMutation();
   const [updateApplicant] = useUpdateApplicantMutation();
   const [bulkUpdateStatus] = useBulkUpdateApplicantStatusMutation();
+  const [sendMessage, { isLoading: isSending }] = useSendMessageMutation();
   const [transcribeApplicant, { isLoading: isTranscribing }] = useTranscribeApplicantMutation();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -48,6 +49,8 @@ export default function ShortlistHub() {
   const [activeTab, setActiveTab] = useState<'ai' | 'notes' | 'tags' | 'resume'>('ai');
   const [showResumePreview, setShowResumePreview] = useState(false);
   const [quickResumeUrl, setQuickResumeUrl] = useState<string | null>(null);
+  const [messageModal, setMessageModal] = useState({ open: false, email: '', name: '' });
+  const [messageContent, setMessageContent] = useState('');
   const [noteText, setNoteText] = useState('');
   const [tagInput, setTagInput] = useState('');
 
@@ -165,6 +168,22 @@ export default function ShortlistHub() {
     }
   };
 
+  const handleSendMessage = async () => {
+    if (!messageContent.trim()) return;
+    try {
+      await sendMessage({
+        email: messageModal.email,
+        name: messageModal.name,
+        message: messageContent
+      }).unwrap();
+      alert(`Message successfully sent to ${messageModal.name}!`);
+      setMessageContent('');
+      setMessageModal({ ...messageModal, open: false });
+    } catch (err) {
+      alert('Failed to send message. Please check SMTP configuration.');
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="p-8 max-w-7xl mx-auto space-y-8">
@@ -271,6 +290,13 @@ export default function ShortlistHub() {
                             <FileText className="w-5 h-5" />
                           </button>
                         )}
+                        <button 
+                          onClick={() => setMessageModal({ open: true, email: app.email, name: app.name })}
+                          className="p-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors shadow-sm"
+                          title="Message Candidate"
+                        >
+                          <Mail className="w-5 h-5" />
+                        </button>
                         <button 
                           onClick={() => setSelectedApplicant(app)}
                           className="p-2 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-colors shadow-sm"
@@ -759,6 +785,57 @@ export default function ShortlistHub() {
                       className="w-full h-full border-none"
                       title="Quick Resume Preview"
                    />
+                </div>
+             </div>
+          </div>
+        )}
+
+        {/* 📧 Simple Messenger Modal */}
+        {messageModal.open && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in transition-all">
+             <div className="bg-white dark:bg-[#1e293b] w-full max-w-lg rounded-[32px] shadow-2xl overflow-hidden border border-[var(--border)]">
+                <div className="p-6 border-b border-[var(--border)] flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+                   <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/40 rounded-xl flex items-center justify-center text-primary-600">
+                         <Mail className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-black text-gray-900 dark:text-gray-100">Message {messageModal.name}</h3>
+                        <p className="text-xs text-gray-500">{messageModal.email}</p>
+                      </div>
+                   </div>
+                   <button onClick={() => setMessageModal({ ...messageModal, open: false })} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                      <XCircle className="w-5 h-5" />
+                   </button>
+                </div>
+                
+                <div className="p-8 space-y-6">
+                   <div className="space-y-2">
+                      <label className="text-xs font-black uppercase tracking-widest text-gray-400">Message Content</label>
+                      <textarea 
+                        rows={6} 
+                        value={messageContent}
+                        onChange={(e) => setMessageContent(e.target.value)}
+                        className="w-full bg-gray-50 dark:bg-gray-800/50 border border-[var(--border)] rounded-2xl p-4 text-sm focus:ring-2 focus:ring-primary-500/50 outline-none"
+                        placeholder="Type your message to the candidate..."
+                      ></textarea>
+                   </div>
+                   
+                   <div className="flex gap-3">
+                      <button 
+                        onClick={handleSendMessage}
+                        disabled={isSending || !messageContent.trim()}
+                        className="flex-1 bg-primary-600 hover:bg-primary-500 text-white font-black py-4 rounded-2xl shadow-xl shadow-primary-500/20 transition-all active:scale-95 disabled:opacity-50"
+                      >
+                        {isSending ? 'Sending...' : 'Send Message'}
+                      </button>
+                      <button 
+                        onClick={() => setMessageModal({ ...messageModal, open: false })}
+                        className="flex-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-black py-4 rounded-2xl transition-all"
+                      >
+                        Cancel
+                      </button>
+                   </div>
                 </div>
              </div>
           </div>

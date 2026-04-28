@@ -1,7 +1,7 @@
 'use client'
 
 import DashboardLayout from '@/components/DashboardLayout';
-import { useGetCRMApplicantsQuery, useRunScreeningMutation, useUpdateApplicantStatusMutation } from '@/store/api';
+import { useGetCRMApplicantsQuery, useRunScreeningMutation, useUpdateApplicantStatusMutation, useSendMessageMutation } from '@/store/api';
 import { Users, Search, Filter, Mail, ExternalLink, BrainCircuit, CheckCircle2, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -11,9 +11,11 @@ export default function HiringCRMPage() {
   const { data: applicants, isLoading, refetch } = useGetCRMApplicantsQuery();
   const [runScreening, { isLoading: isRunning }] = useRunScreeningMutation();
   const [updateStatus] = useUpdateApplicantStatusMutation();
+  const [sendMessage, { isLoading: isSending }] = useSendMessageMutation();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [messageModal, setMessageModal] = useState({ open: false, email: '', name: '' });
+  const [messageContent, setMessageContent] = useState('');
   const [statusLoading, setStatusLoading] = useState<string | null>(null);
 
   const handleStatusUpdate = async (id: string, newStatus: string) => {
@@ -35,6 +37,22 @@ export default function HiringCRMPage() {
       refetch();
     } catch (e: any) {
       alert(e?.data?.error || 'AI Failed.');
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!messageContent.trim()) return;
+    try {
+      await sendMessage({
+        email: messageModal.email,
+        name: messageModal.name,
+        message: messageContent
+      }).unwrap();
+      alert(`Message successfully sent to ${messageModal.name}!`);
+      setMessageContent('');
+      setMessageModal({ ...messageModal, open: false });
+    } catch (err) {
+      alert('Failed to send message. Please check SMTP configuration.');
     }
   };
 
@@ -218,6 +236,8 @@ export default function HiringCRMPage() {
                     <label className="text-xs font-black uppercase tracking-widest text-gray-400">Message Content</label>
                     <textarea 
                       rows={6} 
+                      value={messageContent}
+                      onChange={(e) => setMessageContent(e.target.value)}
                       className="w-full bg-gray-50 dark:bg-gray-800/50 border border-[var(--border)] rounded-2xl p-4 text-sm focus:ring-2 focus:ring-primary-500/50 outline-none"
                       placeholder="Type your message to the candidate..."
                     ></textarea>
@@ -225,13 +245,11 @@ export default function HiringCRMPage() {
                  
                  <div className="flex gap-3">
                     <button 
-                      onClick={() => {
-                        alert('Message sent successfully via Umurava Notify.');
-                        setMessageModal({ ...messageModal, open: false });
-                      }}
-                      className="flex-1 bg-primary-600 hover:bg-primary-500 text-white font-black py-4 rounded-2xl shadow-xl shadow-primary-500/20 transition-all active:scale-95"
+                      onClick={handleSendMessage}
+                      disabled={isSending || !messageContent.trim()}
+                      className="flex-1 bg-primary-600 hover:bg-primary-500 text-white font-black py-4 rounded-2xl shadow-xl shadow-primary-500/20 transition-all active:scale-95 disabled:opacity-50"
                     >
-                      Send Message
+                      {isSending ? 'Sending...' : 'Send Message'}
                     </button>
                     <button 
                       onClick={() => setMessageModal({ ...messageModal, open: false })}

@@ -162,6 +162,9 @@ export const api = createApi({
       query: ({ id, body }) => ({ url: `/applicants/${id}`, method: 'PATCH', body }),
       invalidatesTags: ['Applicant'],
     }),
+    sendMessage: builder.mutation<any, { email: string; message: string; name: string; subject?: string }>({
+      query: (body) => ({ url: '/communication/send', method: 'POST', body }),
+    }),
     bulkUpdateApplicantStatus: builder.mutation<any, { ids: string[]; status: string }>({
       query: (body) => ({ url: '/applicants/bulk-status', method: 'PATCH', body }),
       invalidatesTags: ['Applicant'],
@@ -203,6 +206,7 @@ export const {
   useGetMyApplicationsQuery,
   useUpdateApplicantStatusMutation,
   useUpdateApplicantMutation,
+  useSendMessageMutation,
   useBulkUpdateApplicantStatusMutation,
   useWithdrawApplicationMutation,
   useUploadResumeMutation,
