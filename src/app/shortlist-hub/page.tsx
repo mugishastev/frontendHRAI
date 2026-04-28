@@ -19,7 +19,9 @@ import {
   Brain,
   ShieldCheck,
   AlertTriangle,
-  Info
+  Info,
+  BadgeCheck,
+  Zap
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -298,6 +300,65 @@ export default function ShortlistHub() {
                           {selectedApplicant.resumeText || 'No transcript available.'}
                        </div>
                     </section>
+
+                    {/* NEW: Skill Verification Section */}
+                    {(selectedApplicant.skillsVerification || selectedApplicant.extractedSkills?.length > 0) && (
+                       <section className="space-y-4">
+                          <h4 className="text-sm font-bold flex items-center gap-2">
+                             <BadgeCheck className="w-4 h-4 text-primary-500" />
+                             AI Skill Verification
+                          </h4>
+                          <div className="grid grid-cols-1 gap-4">
+                             {/* Verified Skills */}
+                             {selectedApplicant.skillsVerification?.verified?.length > 0 && (
+                                <div className="p-4 bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl">
+                                   <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 block mb-2">Verified in Resume</span>
+                                   <div className="flex flex-wrap gap-1.5">
+                                      {selectedApplicant.skillsVerification.verified.map((s: string, i: number) => (
+                                         <span key={i} className="px-2 py-1 bg-emerald-100 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-300 rounded-lg text-[10px] font-bold flex items-center gap-1">
+                                            <BadgeCheck className="w-3 h-3" /> {s}
+                                         </span>
+                                      ))}
+                                   </div>
+                                </div>
+                             )}
+
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Claimed but Missing */}
+                                {selectedApplicant.skillsVerification?.claimedButMissing?.length > 0 && (
+                                   <div className="p-4 bg-red-50/50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-2xl">
+                                      <span className="text-[10px] font-black uppercase tracking-widest text-red-600 block mb-2 flex items-center gap-1">
+                                         <AlertTriangle className="w-3 h-3" /> Claimed but Missing
+                                      </span>
+                                      <div className="flex flex-wrap gap-1.5">
+                                         {selectedApplicant.skillsVerification.claimedButMissing.map((s: string, i: number) => (
+                                            <span key={i} className="px-2 py-1 bg-red-100 dark:bg-red-800 text-red-700 dark:text-red-300 rounded-lg text-[10px] font-bold line-through opacity-70">
+                                               {s}
+                                            </span>
+                                         ))}
+                                      </div>
+                                   </div>
+                                )}
+
+                                {/* Hidden Gems */}
+                                {selectedApplicant.skillsVerification?.hiddenGems?.length > 0 && (
+                                   <div className="p-4 bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-2xl">
+                                      <span className="text-[10px] font-black uppercase tracking-widest text-amber-600 block mb-2 flex items-center gap-1">
+                                         <Zap className="w-3 h-3" /> Hidden Gems
+                                      </span>
+                                      <div className="flex flex-wrap gap-1.5">
+                                         {selectedApplicant.skillsVerification.hiddenGems.map((s: string, i: number) => (
+                                            <span key={i} className="px-2 py-1 bg-amber-100 dark:bg-amber-800 text-amber-700 dark:text-amber-300 rounded-lg text-[10px] font-bold">
+                                               {s}
+                                            </span>
+                                         ))}
+                                      </div>
+                                   </div>
+                                )}
+                             </div>
+                          </div>
+                       </section>
+                    )}
                  </div>
 
                  <div className="p-8 border-t border-[var(--border)] bg-gray-50/50 dark:bg-gray-900/50 flex justify-between gap-4">
