@@ -47,6 +47,7 @@ export default function ShortlistHub() {
   const [showComparison, setShowComparison] = useState(false);
   const [activeTab, setActiveTab] = useState<'ai' | 'notes' | 'tags' | 'resume'>('ai');
   const [showResumePreview, setShowResumePreview] = useState(false);
+  const [quickResumeUrl, setQuickResumeUrl] = useState<string | null>(null);
   const [noteText, setNoteText] = useState('');
   const [tagInput, setTagInput] = useState('');
 
@@ -260,14 +261,24 @@ export default function ShortlistHub() {
                          className="w-5 h-5 rounded-lg border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
                        />
                     </div>
-                    <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition-opacity">
-                       <button 
-                         onClick={() => setSelectedApplicant(app)}
-                         className="p-2 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-colors"
-                       >
-                         <Eye className="w-5 h-5" />
-                       </button>
-                    </div>
+                     <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                        {app.resumeUrl && (
+                          <button 
+                            onClick={() => setQuickResumeUrl(app.resumeUrl)}
+                            className="p-2 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-colors shadow-sm"
+                            title="Quick View Resume"
+                          >
+                            <FileText className="w-5 h-5" />
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => setSelectedApplicant(app)}
+                          className="p-2 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-colors shadow-sm"
+                          title="View Full CRM Details"
+                        >
+                          <Eye className="w-5 h-5" />
+                        </button>
+                     </div>
 
                     <div className="flex items-start gap-4 mb-4">
                        <div className="w-12 h-12 bg-primary-100 text-primary-600 rounded-2xl flex items-center justify-center font-bold text-lg">
@@ -294,19 +305,19 @@ export default function ShortlistHub() {
                        <div className="flex gap-2">
                           <button 
                             onClick={() => handleStatusUpdate(app._id, 'interviewing')}
-                            className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-blue-100 transition-colors"
+                            className="px-2.5 py-1 bg-blue-50 text-blue-600 rounded-lg text-[9px] font-black uppercase tracking-wider hover:bg-blue-100 transition-colors"
                           >
                             Interview
                           </button>
                           <button 
                             onClick={() => handleStatusUpdate(app._id, 'rejected')}
-                            className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-red-100 transition-colors"
+                            className="px-2.5 py-1 bg-red-50 text-red-600 rounded-lg text-[9px] font-black uppercase tracking-wider hover:bg-red-100 transition-colors"
                           >
                             Reject
                           </button>
                        </div>
-                       <Link href={`/jobs/${app.jobId?._id || app.jobId}`} className="text-primary-600 hover:translate-x-1 transition-transform">
-                          <ArrowRight className="w-5 h-5" />
+                       <Link href={`/jobs/${app.jobId?._id || app.jobId}`} className="text-primary-600 hover:translate-x-1 transition-transform p-1">
+                          <ArrowRight className="w-4 h-4" />
                        </Link>
                     </div>
                   </div>
@@ -707,22 +718,50 @@ export default function ShortlistHub() {
                     <div className="flex gap-2 self-end">
                        <button 
                          onClick={() => handleStatusUpdate(selectedApplicant._id, 'rejected')}
-                         className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-[var(--border)] rounded-xl text-xs font-bold hover:bg-red-50 hover:text-red-600 transition-all shadow-sm"
+                         className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 border border-[var(--border)] rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-red-50 hover:text-red-600 transition-all shadow-sm"
                        >
-                         <XCircle className="w-3.5 h-3.5" />
+                         <XCircle className="w-3 h-3" />
                          Reject
                        </button>
                        <button 
                          onClick={() => handleStatusUpdate(selectedApplicant._id, 'interviewing')}
-                         className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-xl text-xs font-bold hover:bg-primary-500 shadow-lg shadow-primary-500/20 transition-all"
+                         className="flex items-center gap-2 px-3 py-1.5 bg-primary-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-primary-500 shadow-lg shadow-primary-500/20 transition-all"
                        >
-                         <CalendarIcon className="w-3.5 h-3.5" />
+                         <CalendarIcon className="w-3 h-3" />
                          Interview
                        </button>
                     </div>
                  </div>
               </div>
            </div>
+        )}
+        {/* Quick Resume Modal */}
+        {quickResumeUrl && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+             <div className="bg-white dark:bg-[#0f172a] w-full max-w-4xl h-[90vh] rounded-[40px] shadow-2xl overflow-hidden border border-white/10 flex flex-col">
+                <div className="p-6 border-b border-[var(--border)] flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/30">
+                   <div className="flex items-center gap-3">
+                      <div className="p-2 bg-emerald-100 text-emerald-600 rounded-xl">
+                        <FileText className="w-5 h-5" />
+                      </div>
+                      <h3 className="font-black text-sm uppercase tracking-widest">Quick Resume View</h3>
+                   </div>
+                   <button onClick={() => setQuickResumeUrl(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
+                      <XCircle className="w-6 h-6 text-gray-400" />
+                   </button>
+                </div>
+                <div className="flex-1 bg-gray-100 dark:bg-gray-950">
+                   <iframe 
+                      src={quickResumeUrl.includes('cloudinary.com') 
+                         ? `https://docs.google.com/gview?url=${encodeURIComponent(quickResumeUrl)}&embedded=true`
+                         : quickResumeUrl
+                      } 
+                      className="w-full h-full border-none"
+                      title="Quick Resume Preview"
+                   />
+                </div>
+             </div>
+          </div>
         )}
       </div>
     </DashboardLayout>
