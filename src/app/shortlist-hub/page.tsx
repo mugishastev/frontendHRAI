@@ -1,8 +1,8 @@
 'use client'
 
 import DashboardLayout from '@/components/DashboardLayout';
-import { useGetJobsQuery, useGetCRMApplicantsQuery, useUpdateApplicantStatusMutation, useGetScreeningQuery } from '@/store/api';
-import { useState, useMemo } from 'react';
+import { useGetJobsQuery, useGetCRMApplicantsQuery, useUpdateApplicantStatusMutation, useGetScreeningQuery, useTranscribeApplicantMutation } from '@/store/api';
+import { useState, useMemo, useEffect } from 'react';
 import { 
   Users, 
   Briefcase, 
@@ -34,10 +34,17 @@ export default function ShortlistHub() {
   const { data: jobs, isLoading: jobsLoading } = useGetJobsQuery();
   const { data: allApplicants, isLoading: appsLoading, refetch } = useGetCRMApplicantsQuery();
   const [updateStatus] = useUpdateApplicantStatusMutation();
+  const [transcribeApplicant, { isLoading: isTranscribing }] = useTranscribeApplicantMutation();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedJobId, setSelectedJobId] = useState<string>('all');
   const [selectedApplicant, setSelectedApplicant] = useState<any>(null);
+
+  useEffect(() => {
+    if (selectedApplicant && !selectedApplicant.resumeText && selectedApplicant.resumeUrl) {
+      transcribeApplicant(selectedApplicant._id);
+    }
+  }, [selectedApplicant, transcribeApplicant]);
 
   // Fetch screening data for the selected job (if one is selected)
   const { data: screeningData, isLoading: screeningLoading } = useGetScreeningQuery(selectedJobId, { 
@@ -346,7 +353,14 @@ export default function ShortlistHub() {
                           Resume Transcription
                        </h4>
                        <div className="p-5 bg-gray-50 dark:bg-gray-800 rounded-2xl text-xs font-mono text-gray-500 leading-relaxed max-h-48 overflow-y-auto">
-                          {selectedApplicant.resumeText || 'No transcript available.'}
+                          {isTranscribing ? (
+                             <div className="flex items-center gap-2 text-primary-600 animate-pulse">
+                                <Brain className="w-4 h-4 animate-spin" />
+                                AI is transcribing resume...
+                             </div>
+                          ) : (
+                             selectedApplicant.resumeText || 'No transcript available.'
+                          )}
                        </div>
                     </section>
 
@@ -425,6 +439,26 @@ export default function ShortlistHub() {
                          Reject Candidate
                        </button>
                     </div>
+                    {/* NEW: Embedded CV Viewer */}
+                    {selectedApplicant.resumeUrl && (
+                       <div className="mt-8 space-y-4">
+                          <h4 className="text-sm font-bold flex items-center gap-2">
+                             <Eye className="w-4 h-4 text-primary-500" />
+                             Original Resume Preview
+                          </h4>
+                          <div className="w-full h-[600px] rounded-3xl overflow-hidden border border-[var(--border)] bg-gray-100 dark:bg-gray-900 shadow-inner">
+                             <iframe 
+                                src={selectedApplicant.resumeUrl.includes('cloudinary.com') 
+                                   ? `https://docs.google.com/gview?url=${encodeURIComponent(selectedApplicant.resumeUrl)}&embedded=true`
+                                   : selectedApplicant.resumeUrl
+                                } 
+                                className="w-full h-full border-none"
+                                title="Resume Preview"
+                             />
+                          </div>
+                       </div>
+                    )}
+
                     {selectedApplicant.resumeUrl && (
                        <a 
                          href={selectedApplicant.resumeUrl.startsWith('http') ? selectedApplicant.resumeUrl : `https://${selectedApplicant.resumeUrl}`} 

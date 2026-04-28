@@ -150,6 +150,10 @@ export const api = createApi({
         body: formData,
       }),
     }),
+    transcribeApplicant: builder.mutation<any, string>({
+      query: (id) => ({ url: `/applicants/${id}/transcribe`, method: 'POST' }),
+      invalidatesTags: ['Applicant'],
+    }),
   }),
 });
 
@@ -182,4 +186,5 @@ export const {
   useUpdateApplicantStatusMutation,
   useWithdrawApplicationMutation,
   useUploadResumeMutation,
+  useTranscribeApplicantMutation,
 } = api;
